@@ -157,6 +157,27 @@ public class UserController {
         }
     }
 
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        String otp = payload.get("otp");
+        String newPassword = payload.get("newPassword");
+
+        // 1. OTP Verify karo
+        if (emailService.verifyOtp(email, otp)) {
+            // 2. User dhoondo
+            User user = userRepository.findByEmail(email);
+            if (user != null) {
+                // 3. Password Update karo
+                user.setPassword(newPassword); 
+                userRepository.save(user);
+                return ResponseEntity.ok(Map.of("message", "Password updated successfully! 🚀"));
+            }
+            return ResponseEntity.status(404).body("User not found");
+        }
+        return ResponseEntity.status(400).body("Invalid or Expired OTP ❌");
+    }
+
     // --- 7. ACCEPT FRIEND REQUEST ---
     @PostMapping("/accept-friend")
     public ResponseEntity<?> acceptRequest(@RequestBody Map<String, Long> request) {
