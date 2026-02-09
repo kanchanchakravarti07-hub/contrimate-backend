@@ -42,10 +42,6 @@ public class UserController {
             if (!Pattern.matches("^[A-Za-z0-9+_.-]+@gmail\\.com$", cleanEmail)) {
                 return ResponseEntity.badRequest().body("Error: Sirf valid '@gmail.com' allow hai!");
             }
-            // Signup ke time check:
-            // if (userRepository.findByEmail(cleanEmail).isPresent()) {
-            //    return ResponseEntity.badRequest().body("Error: Email registered hai!");
-            // }
             emailService.sendOtp(cleanEmail);
             return ResponseEntity.ok("OTP bhej diya gaya hai: " + cleanEmail);
         } catch (Exception e) {
@@ -58,23 +54,18 @@ public class UserController {
     public ResponseEntity<?> addUser(@RequestBody User user) {
         try {
             String email = user.getEmail().trim().toLowerCase();
-            
             if (!emailService.verifyOtp(email, user.getOtp())) {
                 return ResponseEntity.badRequest().body("Error: OTP galat hai ya expire ho gaya hai!");
             }
-            // Basic UPI Check
             if (user.getUpiId() == null || !user.getUpiId().contains("@")) {
                 return ResponseEntity.badRequest().body("Error: Invalid UPI ID!");
             }
-            
             if (userRepository.findByEmail(email).isPresent()) {
                 return ResponseEntity.badRequest().body("Error: Email already registered.");
             }
-
             user.setEmail(email);
             User savedUser = userRepository.save(user);
             return ResponseEntity.ok(savedUser);
-
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body("Server Error: " + e.getMessage());
         }
@@ -114,15 +105,12 @@ public class UserController {
         try {
             String myEmail = request.get("myEmail").trim().toLowerCase();
             String friendEmail = request.get("friendEmail").trim().toLowerCase();
-
             if (myEmail.equals(friendEmail)) return ResponseEntity.badRequest().body("Error: Khud ko request nahi bhej sakte!");
 
             Optional<User> me = userRepository.findByEmail(myEmail);
             Optional<User> friend = userRepository.findByEmail(friendEmail);
-
             if (friend.isEmpty()) return ResponseEntity.status(404).body("Error: User nahi mila!");
 
-            // ✅ FIX: Standard method name usage
             if (friendshipRepository.findByUserAndFriend(me.get(), friend.get()).isPresent()) {
                 return ResponseEntity.badRequest().body("Error: Request pehle se bheji hui hai ya dost hain!");
             }
@@ -140,13 +128,12 @@ public class UserController {
             notificationRepository.save(n);
 
             return ResponseEntity.ok("Friend Request Sent! 📩");
-
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body("Error: " + e.getMessage());
         }
     }
 
-    // --- ✅ FIX 7: Reset Password Logic Corrected ---
+    // --- 7. RESET PASSWORD ---
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
@@ -154,7 +141,7 @@ public class UserController {
         String newPassword = payload.get("newPassword");
 
         if (emailService.verifyOtp(email, otp)) {
-            Optional<User> userOpt = userRepository.findByEmail(email); // ✅ FIX: Optional handling
+            Optional<User> userOpt = userRepository.findByEmail(email);
             if (userOpt.isPresent()) {
                 User user = userOpt.get();
                 user.setPassword(newPassword); 
@@ -171,7 +158,6 @@ public class UserController {
     public ResponseEntity<?> acceptRequest(@RequestBody Map<String, Long> request) {
         Long requestId = request.get("requestId");
         Optional<Friendship> f = friendshipRepository.findById(requestId);
-
         if (f.isPresent()) {
             Friendship friendship = f.get();
             friendship.setStatus("ACCEPTED"); 
@@ -184,13 +170,8 @@ public class UserController {
     // --- 9. GET MY FRIENDS ---
     @GetMapping("/my-friends")
     public ResponseEntity<?> getMyFriends(@RequestParam String email) {
-        // ✅ FIX: Using standard finding instead of custom Query to avoid build fail
         Optional<User> user = userRepository.findByEmail(email);
         if (user.isEmpty()) return ResponseEntity.status(404).build();
-        
-        // Note: Asli logic ke liye FriendshipRepository me @Query chahiye hoga.
-        // Abhi ke liye empty list bhej rahe hain taaki error na aaye.
-        // Baad me repository update kar lenge.
         return ResponseEntity.ok(new ArrayList<>()); 
     }
 
@@ -199,7 +180,6 @@ public class UserController {
     public ResponseEntity<?> getPendingRequests(@RequestParam String email) {
         Optional<User> user = userRepository.findByEmail(email);
         if (user.isEmpty()) return ResponseEntity.status(404).build();
-
         List<Friendship> requests = friendshipRepository.findByFriendAndStatus(user.get(), "PENDING");
         return ResponseEntity.ok(requests);
     }
@@ -209,14 +189,12 @@ public class UserController {
     public ResponseEntity<?> removeFriend(@RequestBody Map<String, String> request) {
         String myEmail = request.get("myEmail");
         Long otherId = Long.valueOf(request.get("friendId"));
-
         Optional<User> me = userRepository.findByEmail(myEmail);
         Optional<User> other = userRepository.findById(otherId);
 
         if (me.isPresent() && other.isPresent()) {
             User u1 = me.get();
             User u2 = other.get();
-
             Optional<Friendship> f1 = friendshipRepository.findByUserAndFriend(u1, u2);
             if (f1.isPresent()) {
                 friendshipRepository.delete(f1.get());
@@ -230,5 +208,25 @@ public class UserController {
             return ResponseEntity.badRequest().body("No friendship found");
         }
         return ResponseEntity.badRequest().body("User not found");
+    }
+
+    // --- 🔥 12. UPDATE PROFILE ---
+    @PutMapping("/update-profile")
+    public ResponseEntity<?> updateProfile(@RequestBody Map<String, String> request) {
+        try {
+            Long userId = Long.valueOf(request.get("id"));
+            String newName = request.get("name");
+            Optional<User> userOpt = userRepository.findById(userId);
+            if (userOpt.isPresent()) {
+                User user = userOpt.get();
+                user.setName(newName);
+                userRepository.save(user);
+                return ResponseEntity.ok("Profile Updated Successfully! ✅");
+            } else {
+                return ResponseEntity.status(404).body("Error: User nahi mila!");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error: " + e.getMessage());
+        }
     }
 }
