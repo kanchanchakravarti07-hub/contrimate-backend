@@ -15,53 +15,44 @@ public class EmailService {
     @Autowired
     private JavaMailSender mailSender;
 
-    // Stores email -> OTP
     private Map<String, String> otpStorage = new HashMap<>();
 
-    // --- METHOD 1: For UserController (Returns the OTP String) ---
+    // --- METHOD 1: Send OTP ---
     public String sendOtp(String toEmail) {
-        // 1. OTP Generate karo
         String otp = String.format("%06d", new Random().nextInt(999999));
-        
-        // 2. Storage mein daalo taaki Verify ho sake
         otpStorage.put(toEmail, otp);
 
-        // 3. Email Message banao (Bas dikhawe ke liye)
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom("2314114kanchan.2023cse@gmail.com");
-        message.setTo(toEmail);
-        message.setSubject("ContriMate - Your Verification OTP");
-        message.setText("Welcome to ContriMate!\n\nYour OTP is: " + otp);
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            // Note: Sender email ab 'application.properties' se uthaya jayega
+            message.setFrom("ContriMate <noreply@contrimate.com>"); 
+            message.setTo(toEmail);
+            message.setSubject("ContriMate - Verification OTP");
+            message.setText("Welcome!\n\nYour OTP is: " + otp + "\n\nThis expires in 10 minutes.");
 
-        // 🛑 ASLI EMAIL MAT BHEJO (Timeout se bachne ke liye)
-        // mailSender.send(message); 
-
-        // ✅ LOGS MEIN PRINT KARO (Railway Dashboard par dikhega)
-        System.out.println("\n==================================================");
-        System.out.println("🚀 [FAKE EMAIL SENT] To: " + toEmail);
-        System.out.println("🔑 YOUR OTP IS: " + otp);
-        System.out.println("==================================================\n");
+            mailSender.send(message); // ✅ ASLI EMAIL BHEJEGA
+            System.out.println("✅ Email sent successfully to " + toEmail);
+        } catch (Exception e) {
+            System.err.println("❌ Email Failed: " + e.getMessage());
+            e.printStackTrace();
+            throw e; // Error throw karo taaki frontend ko pata chale
+        }
 
         return otp;
     }
 
-    // --- METHOD 2: For AuthController (Returns Boolean) ---
+    // --- METHOD 2: Wrapper ---
     public boolean sendOtpEmail(String toEmail) {
         try {
-            sendOtp(toEmail); // Upar wala logic use karega
-            return true;      // Hamesha True return karega (Success)
+            sendOtp(toEmail);
+            return true;
         } catch (Exception e) {
-            e.printStackTrace();
             return false;
         }
     }
 
-    // --- Verify Method ---
+    // --- Verify ---
     public boolean verifyOtp(String email, String userOtp) {
-        if (otpStorage.containsKey(email) && otpStorage.get(email).equals(userOtp)) {
-            // OTP match ho gaya!
-            return true;
-        }
-        return false;
+        return otpStorage.containsKey(email) && otpStorage.get(email).equals(userOtp);
     }
 }
