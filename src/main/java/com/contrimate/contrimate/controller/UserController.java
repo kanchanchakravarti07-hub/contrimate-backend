@@ -168,12 +168,26 @@ public class UserController {
     }
 
     // --- 9. GET MY FRIENDS ---
-    @GetMapping("/my-friends")
-    public ResponseEntity<?> getMyFriends(@RequestParam String email) {
-        Optional<User> user = userRepository.findByEmail(email);
-        if (user.isEmpty()) return ResponseEntity.status(404).build();
-        return ResponseEntity.ok(new ArrayList<>()); 
+    // --- 9. GET MY FRIENDS (Real Logic) ---
+@GetMapping("/my-friends")
+public ResponseEntity<?> getMyFriends(@RequestParam String email) {
+    Optional<User> userOpt = userRepository.findByEmail(email);
+    if (userOpt.isEmpty()) return ResponseEntity.status(404).build();
+    
+    User user = userOpt.get();
+    List<Friendship> friendships = friendshipRepository.findAllAcceptedFriends(user);
+    
+    // Sirf doston ki User objects nikalne ke liye
+    List<User> friends = new ArrayList<>();
+    for (Friendship f : friendships) {
+        if (f.getUser().getId().equals(user.getId())) {
+            friends.add(f.getFriend());
+        } else {
+            friends.add(f.getUser());
+        }
     }
+    return ResponseEntity.ok(friends);
+}
 
     // --- 10. GET PENDING REQUESTS ---
     @GetMapping("/pending-requests")
