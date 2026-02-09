@@ -132,7 +132,7 @@ public class UserController {
 
             if (friend.isEmpty()) return ResponseEntity.status(404).body("Error: User nahi mila!");
 
-            if (friendshipRepository.existsByUserAndFriend(me.get(), friend.get())) {
+            if (friendshipRepository.existsByUsers(me.get(), friend.get())) {
                 return ResponseEntity.badRequest().body("Error: Request pehle se bheji hui hai ya dost hain!");
             }
 

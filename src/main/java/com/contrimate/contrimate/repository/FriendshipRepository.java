@@ -12,22 +12,22 @@ import java.util.Optional;
 
 @Repository
 public interface FriendshipRepository extends JpaRepository<Friendship, Long> {
-    
-    // ✅ 1. SAARE DOST (Accepted)
+
+    // 1. Accepted Friends
     @Query("SELECT f FROM Friendship f WHERE (f.user = :user OR f.friend = :user) AND f.status = 'ACCEPTED'")
     List<Friendship> findAllAcceptedFriends(@Param("user") User user);
 
-    // ✅ 2. INCOMING REQUESTS
+    // 2. Incoming Requests
     List<Friendship> findByFriendAndStatus(User friend, String status);
 
-    // ✅ 3. OUTGOING REQUESTS
+    // 3. Outgoing Requests
     List<Friendship> findByUserAndStatus(User user, String status);
 
-    // 🔥 4. CHECK BOTH WAYS (Ye method zaroori hai!)
+    // 🔥 4. YE WALA METHOD MISSING THA (Isko dhyan se copy karna)
     @Query("SELECT CASE WHEN COUNT(f) > 0 THEN true ELSE false END FROM Friendship f " +
            "WHERE (f.user = :u1 AND f.friend = :u2) OR (f.user = :u2 AND f.friend = :u1)")
     boolean existsByUsers(@Param("u1") User u1, @Param("u2") User u2);
     
-    // ✅ 5. DELETE KE LIYE
+    // 5. Delete specific request
     Optional<Friendship> findByUserAndFriend(User user, User friend);
 }
