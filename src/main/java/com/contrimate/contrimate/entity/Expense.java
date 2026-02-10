@@ -30,12 +30,9 @@ public class Expense {
     @JsonIgnoreProperties("expense")
     private List<ExpenseSplit> splits;
 
-    // 🔥 ADDED THIS: Taaki har expense ke saath uske comments (chat) bhi aayein
     @OneToMany(mappedBy = "expense", cascade = CascadeType.ALL)
     @JsonIgnoreProperties("expense")
     private List<Comment> comments;
-
-    // --- MANUAL GETTERS & SETTERS ---
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -61,7 +58,6 @@ public class Expense {
     public List<ExpenseSplit> getSplits() { return splits; }
     public void setSplits(List<ExpenseSplit> splits) { this.splits = splits; }
 
-    // 🔥 Getter/Setter for Comments
     public List<Comment> getComments() { return comments; }
     public void setComments(List<Comment> comments) { this.comments = comments; }
 }

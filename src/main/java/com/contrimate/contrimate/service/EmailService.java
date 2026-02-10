@@ -20,7 +20,6 @@ public class EmailService {
     @Value("${SENDGRID_API_KEY}") 
     private String apiKey;
 
-    // 🔥 FIX: Yahan verified email daal diya hai
     private String senderEmail = "2314114kanchan.2023cse@gmail.com"; 
 
     @Autowired
@@ -46,7 +45,6 @@ public class EmailService {
                     + "<hr style='border:none;border-top:1px solid #eee' />"
                     + "</div></div>";
 
-            // Payload Structure
             Map<String, Object> personalizations = new HashMap<>();
             personalizations.put("to", List.of(Map.of("email", toEmail)));
 
@@ -79,7 +77,6 @@ public class EmailService {
                 System.out.println("✅ Email Sent via SendGrid to: " + toEmail);
             } else {
                 System.err.println("❌ API Error: " + response.body());
-                // Fallback abhi bhi rakho just in case
                 System.out.println("⚠️ FALLBACK OTP (Logs): " + otp); 
             }
 

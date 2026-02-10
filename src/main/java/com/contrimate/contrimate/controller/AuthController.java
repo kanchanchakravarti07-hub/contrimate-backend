@@ -7,13 +7,11 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
-
 public class AuthController {
 
     @Autowired
     private EmailService emailService;
 
-    // API 1: Send OTP
     @PostMapping("/send-otp")
     public String sendOtp(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
@@ -21,7 +19,6 @@ public class AuthController {
         return sent ? "OTP_SENT" : "ERROR";
     }
 
-    // API 2: Verify OTP
     @PostMapping("/verify-otp")
     public String verifyOtp(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");

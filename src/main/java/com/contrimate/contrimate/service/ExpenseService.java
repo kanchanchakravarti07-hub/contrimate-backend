@@ -15,7 +15,6 @@ public class ExpenseService {
     @Autowired private GroupRepository groupRepository;
     @Autowired private UserRepository userRepository;
 
-    // --- 1. SAVE EXPENSE ---
     @Transactional
     public Expense saveExpense(Expense expense) {
         if (expense.getSplits() != null) {
@@ -26,18 +25,14 @@ public class ExpenseService {
         return expenseRepository.save(expense);
     }
 
-    // --- 2. GET GROUP EXPENSES ---
     public List<Expense> getExpensesByGroup(Long groupId) {
         return expenseRepository.findByGroupId(groupId);
     }
 
-    // --- 3. GET USER EXPENSES ---
     public List<Expense> getExpensesByUser(Long userId) {
-        // Updated Repository Call
         return expenseRepository.findByUserId(userId);
     }
 
-    // --- 4. CALCULATE USER BALANCE ---
     public Double getUserBalance(Long userId) {
         List<Expense> expenses = expenseRepository.findByUserId(userId);
         
@@ -45,16 +40,13 @@ public class ExpenseService {
         double totalConsumed = 0; 
 
         for (Expense e : expenses) {
-            // 1. Add to Total Paid if I am the payer
             if (e.getPaidBy().getId().equals(userId)) {
                 totalPaid += e.getTotalAmount();
             }
             
-            // 2. Add to Total Consumed if I am in the split
             if (e.getSplits() != null) {
                 for (ExpenseSplit split : e.getSplits()) {
                     if (split.getUser().getId().equals(userId)) {
-                        // 🔥 FIX: getAmount() -> getAmountOwed()
                         totalConsumed += split.getAmountOwed(); 
                     }
                 }
@@ -63,7 +55,6 @@ public class ExpenseService {
         return totalPaid - totalConsumed;
     }
 
-    // --- 5. GET FRIEND BALANCES (For Settle Up List) ---
     public List<Map<String, Object>> getFriendBalances(Long userId) {
         List<Expense> expenses = expenseRepository.findByUserId(userId);
         Map<Long, Double> balanceMap = new HashMap<>();
@@ -74,14 +65,11 @@ public class ExpenseService {
             if (e.getSplits() != null) {
                 for (ExpenseSplit split : e.getSplits()) {
                     Long borrowerId = split.getUser().getId();
-                    // 🔥 FIX: getAmount() -> getAmountOwed()
                     Double amount = split.getAmountOwed(); 
 
-                    // Case 1: Maine pay kiya -> Woh mujhe dega (+ve)
                     if (payerId.equals(userId) && !borrowerId.equals(userId)) {
                         balanceMap.put(borrowerId, balanceMap.getOrDefault(borrowerId, 0.0) + amount);
                     }
-                    // Case 2: Usne pay kiya -> Main use dunga (-ve)
                     else if (borrowerId.equals(userId) && !payerId.equals(userId)) {
                         balanceMap.put(payerId, balanceMap.getOrDefault(payerId, 0.0) - amount);
                     }
@@ -89,7 +77,6 @@ public class ExpenseService {
             }
         }
 
-        // Convert Map to List
         List<Map<String, Object>> result = new ArrayList<>();
         
         for (Map.Entry<Long, Double> entry : balanceMap.entrySet()) {
@@ -110,7 +97,6 @@ public class ExpenseService {
         return result;
     }
 
-    // --- 6. SETTLE UP ---
     @Transactional
     public Expense settleUp(Long payerId, Long receiverId, Double amount) {
         User payer = userRepository.findById(payerId).orElseThrow(() -> new RuntimeException("Payer not found"));
@@ -126,7 +112,6 @@ public class ExpenseService {
         ExpenseSplit split = new ExpenseSplit();
         split.setExpense(settlement);
         split.setUser(receiver);
-        // 🔥 FIX: setAmount() -> setAmountOwed()
         split.setAmountOwed(amount);
         
         settlement.setSplits(List.of(split));
@@ -134,7 +119,6 @@ public class ExpenseService {
         return expenseRepository.save(settlement);
     }
 
-    // --- 7. DELETE & CLEAR ---
     public void deleteExpense(Long id) { expenseRepository.deleteById(id); }
     public void clearAll() { expenseRepository.deleteAll(); }
 }

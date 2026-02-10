@@ -14,7 +14,6 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/api/expenses")
-
 public class ExpenseController {
 
     @Autowired
@@ -23,7 +22,6 @@ public class ExpenseController {
     @Autowired
     private UserRepository userRepository;
 
-    // 1. GET USER BALANCE
     @GetMapping("/user-balance")
     public ResponseEntity<Double> getUserBalance(@RequestParam Long userId) {
         try {
@@ -34,28 +32,23 @@ public class ExpenseController {
         }
     }
 
-    // 2. GET ALL EXPENSES FOR A USER
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<Expense>> getUserExpenses(@PathVariable Long userId) {
         List<Expense> expenses = expenseService.getExpensesByUser(userId);
         return ResponseEntity.ok(expenses != null ? expenses : List.of());
     }
 
-    // 3. GET EXPENSES FOR A SPECIFIC GROUP
     @GetMapping("/group/{groupId}")
     public ResponseEntity<List<Expense>> getExpensesByGroup(@PathVariable Long groupId) {
         List<Expense> expenses = expenseService.getExpensesByGroup(groupId);
         return ResponseEntity.ok(expenses != null ? expenses : List.of());
     }
 
-    // 🔥 4. ADD EXPENSE (FIXED: Error Saving & DB Sync)
     @PostMapping("/add")
     public ResponseEntity<?> createExpense(@RequestBody Expense expense) {
         try {
-            // Timestamp set karna zaroori hai
             expense.setCreatedAt(LocalDateTime.now());
 
-            // Splits ko Expense Object se manually link karna padta hai foreign key ke liye
             if (expense.getSplits() != null && !expense.getSplits().isEmpty()) {
                 for (ExpenseSplit split : expense.getSplits()) {
                     split.setExpense(expense);
@@ -67,13 +60,11 @@ public class ExpenseController {
             Expense saved = expenseService.saveExpense(expense);
             return ResponseEntity.ok(saved);
         } catch (Exception e) {
-            // Railway logs mein poori detail dikhegi
             e.printStackTrace(); 
             return ResponseEntity.badRequest().body("Backend Error: " + e.getMessage());
         }
     }
 
-    // 5. SETTLE UP (RECORD PAYMENT)
     @PostMapping("/settle")
     public ResponseEntity<?> settleUp(@RequestBody Map<String, Object> payload) {
         try {
@@ -86,7 +77,6 @@ public class ExpenseController {
         }
     }
 
-    // 6. DELETE EXPENSE
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<?> delete(@PathVariable Long id) {
         try {
@@ -97,14 +87,12 @@ public class ExpenseController {
         }
     }
 
-    // 7. CLEAR ALL DATA (Testing Only)
     @DeleteMapping("/clear")
     public ResponseEntity<?> clear() {
         expenseService.clearAll();
         return ResponseEntity.ok("All Data Cleared");
     }
 
-    // 🔥 8. GET DEBTS (With UPI & Profile Pictures for Real Pay)
     @GetMapping("/debts/{userId}")
     public ResponseEntity<List<Map<String, Object>>> getUserDebts(@PathVariable Long userId) {
         try {
@@ -114,14 +102,12 @@ public class ExpenseController {
             for (Map<String, Object> debt : rawDebts) {
                 Long friendId = Long.valueOf(debt.get("userId").toString());
                 
-                // Har dost ki extra details database se fetch karna
                 Optional<User> friendOpt = userRepository.findById(friendId);
                 
                 if (friendOpt.isPresent()) {
                     User friend = friendOpt.get();
                     Map<String, Object> debtMap = new HashMap<>(debt);
                     
-                    // UPI ID aur Profile Pic add karna frontend ke liye
                     debtMap.put("upiId", friend.getUpiId()); 
                     debtMap.put("profilePic", friend.getProfilePic()); 
                     

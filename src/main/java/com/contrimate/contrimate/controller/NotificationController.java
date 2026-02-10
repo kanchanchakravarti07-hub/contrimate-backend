@@ -11,13 +11,11 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/notifications")
-
 public class NotificationController {
 
     @Autowired
     private NotificationRepository notificationRepository;
 
-    // 1. Send Notification (Jab koi Request karega)
     @PostMapping("/send")
     public ResponseEntity<?> sendNotification(@RequestBody Map<String, Object> payload) {
         try {
@@ -26,7 +24,7 @@ public class NotificationController {
 
             Notification n = new Notification();
             n.setMessage(message);
-            n.setUserId(userId); // ✅ Ab ye setUserId kaam karega
+            n.setUserId(userId);
             n.setIsRead(false);
             
             notificationRepository.save(n);
@@ -37,13 +35,11 @@ public class NotificationController {
         }
     }
 
-    // 2. Get User Notifications (Bell Icon click karne par)
     @GetMapping("/{userId}")
     public List<Notification> getUserNotifications(@PathVariable Long userId) {
         return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
     }
     
-    // 3. Mark as Read / Delete (Clear karne ke liye)
     @DeleteMapping("/clear/{id}")
     public void clearNotification(@PathVariable Long id) {
         notificationRepository.deleteById(id);

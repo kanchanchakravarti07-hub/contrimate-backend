@@ -10,13 +10,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime; // 🔥 Import zaroori hai
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/comments")
-
 public class CommentController {
 
     @Autowired private CommentRepository commentRepository;
@@ -42,7 +41,7 @@ public class CommentController {
             c.setText(text);
             c.setUser(user);
             c.setExpense(expense);
-            c.setCreatedAt(LocalDateTime.now()); // 🔥 Message ka time save karo
+            c.setCreatedAt(LocalDateTime.now());
             
             return ResponseEntity.ok(commentRepository.save(c));
         } catch (Exception e) {

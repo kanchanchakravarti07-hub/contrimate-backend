@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import java.util.List;
 
 @Entity
-@Table(name = "app_groups") // Table ka naam alag rakha
+@Table(name = "app_groups")
 public class AppGroup {
 
     @Id
@@ -12,12 +12,11 @@ public class AppGroup {
     private Long id;
 
     private String name;
-    private Long adminId; // Jo group banayega wo Admin
+    private Long adminId;
 
-    @ElementCollection // List of IDs ko store karne ke liye
+    @ElementCollection
     private List<Long> memberIds;
 
-    // --- Getters & Setters ---
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

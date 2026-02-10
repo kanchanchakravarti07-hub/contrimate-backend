@@ -19,7 +19,6 @@ import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/api/users")
-
 public class UserController {
 
     @Autowired
@@ -34,7 +33,6 @@ public class UserController {
     @Autowired
     private NotificationRepository notificationRepository;
 
-    // --- 1. SEND OTP ---
     @PostMapping("/send-otp")
     public ResponseEntity<?> sendOtp(@RequestParam String email) {
         try {
@@ -49,7 +47,6 @@ public class UserController {
         }
     }
 
-    // --- 2. SIGNUP / ADD USER ---
     @PostMapping("/add")
     public ResponseEntity<?> addUser(@RequestBody User user) {
         try {
@@ -71,7 +68,6 @@ public class UserController {
         }
     }
 
-    // --- 3. LOGIN ---
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody User loginData) {
         Optional<User> user = userRepository.findByEmail(loginData.getEmail());
@@ -82,13 +78,11 @@ public class UserController {
         }
     }
 
-    // --- 4. GET ALL USERS ---
     @GetMapping("/all")
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
 
-    // --- 5. DELETE USER ---
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<?> deleteUser(@PathVariable Long id) {
         try {
@@ -99,7 +93,6 @@ public class UserController {
         }
     }
 
-    // --- 6. SEND FRIEND REQUEST ---
     @PostMapping("/add-friend")
     public ResponseEntity<?> sendFriendRequest(@RequestBody Map<String, String> request) {
         try {
@@ -133,7 +126,6 @@ public class UserController {
         }
     }
 
-    // --- 7. RESET PASSWORD ---
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
@@ -153,7 +145,6 @@ public class UserController {
         return ResponseEntity.status(400).body("Invalid or Expired OTP ❌");
     }
 
-    // --- 8. ACCEPT FRIEND REQUEST ---
     @PostMapping("/accept-friend")
     public ResponseEntity<?> acceptRequest(@RequestBody Map<String, Long> request) {
         Long requestId = request.get("requestId");
@@ -167,7 +158,6 @@ public class UserController {
         return ResponseEntity.badRequest().body("Request not found");
     }
 
-    // --- 9. GET MY FRIENDS ---
     @GetMapping("/my-friends")
     public ResponseEntity<?> getMyFriends(@RequestParam String email) {
         Optional<User> userOpt = userRepository.findByEmail(email);
@@ -187,7 +177,6 @@ public class UserController {
         return ResponseEntity.ok(friends);
     }
 
-    // --- 10. GET PENDING REQUESTS ---
     @GetMapping("/pending-requests")
     public ResponseEntity<?> getPendingRequests(@RequestParam String email) {
         Optional<User> user = userRepository.findByEmail(email);
@@ -196,7 +185,6 @@ public class UserController {
         return ResponseEntity.ok(requests);
     }
 
-    // --- 11. REMOVE FRIEND ---
     @PostMapping("/remove-friend")
     public ResponseEntity<?> removeFriend(@RequestBody Map<String, String> request) {
         try {
@@ -226,7 +214,6 @@ public class UserController {
         }
     }
 
-    // --- 12. UPDATE PROFILE ---
     @PutMapping("/update-profile")
     public ResponseEntity<?> updateProfile(@RequestBody Map<String, String> request) {
         try {
@@ -249,12 +236,12 @@ public class UserController {
             return ResponseEntity.internalServerError().body("Error: " + e.getMessage());
         }
     }
+
     @GetMapping("/sent-requests")
-public ResponseEntity<?> getSentRequests(@RequestParam String email) {
-    Optional<User> user = userRepository.findByEmail(email);
-    if (user.isEmpty()) return ResponseEntity.status(404).build();
-    // Friendship table mein status 'PENDING' aur sender 'user' hona chahiye
-    List<Friendship> requests = friendshipRepository.findByUserAndStatus(user.get(), "PENDING");
-    return ResponseEntity.ok(requests);
-}
+    public ResponseEntity<?> getSentRequests(@RequestParam String email) {
+        Optional<User> user = userRepository.findByEmail(email);
+        if (user.isEmpty()) return ResponseEntity.status(404).build();
+        List<Friendship> requests = friendshipRepository.findByUserAndStatus(user.get(), "PENDING");
+        return ResponseEntity.ok(requests);
+    }
 }

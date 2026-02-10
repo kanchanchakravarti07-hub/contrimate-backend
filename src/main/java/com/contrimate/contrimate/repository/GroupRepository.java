@@ -6,5 +6,4 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface GroupRepository extends JpaRepository<AppGroup, Long> {
-    // Andar sab kuch delete kar do, humein custom query ki zaroorat nahi hai
 }
