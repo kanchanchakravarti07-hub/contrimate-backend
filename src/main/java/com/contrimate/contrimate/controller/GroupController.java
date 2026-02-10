@@ -9,7 +9,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/groups")
-
 public class GroupController {
 
     @Autowired
@@ -21,13 +20,19 @@ public class GroupController {
         return groupRepository.save(group);
     }
 
-    // 2. Get All Groups
+    // 2. Get All Groups (Admin/Debug ke liye)
     @GetMapping("/all")
     public List<AppGroup> getAllGroups() {
         return groupRepository.findAll();
     }
 
-    // 3. Update Group (Members add/remove)
+    // 🔥 3. GET MY GROUPS (Ye missing tha - Isliye 404 aa raha tha)
+    @GetMapping("/my-groups")
+    public List<AppGroup> getMyGroups(@RequestParam Long userId) {
+        return groupRepository.findByMemberIdsContaining(userId);
+    }
+
+    // 4. Update Group
     @PutMapping("/update/{id}")
     public AppGroup updateGroup(@PathVariable Long id, @RequestBody AppGroup updatedGroup) {
         return groupRepository.findById(id).map(group -> {
@@ -37,7 +42,7 @@ public class GroupController {
         }).orElse(null);
     }
 
-    // 4. Delete Group
+    // 5. Delete Group
     @DeleteMapping("/delete/{id}")
     public void deleteGroup(@PathVariable Long id) {
         groupRepository.deleteById(id);
