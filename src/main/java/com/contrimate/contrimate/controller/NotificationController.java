@@ -26,6 +26,7 @@ public class NotificationController {
             n.setMessage(message);
             n.setUserId(userId);
             n.setIsRead(false);
+            // n.setCreatedAt(java.time.LocalDateTime.now()); // Uncomment if needed
             
             notificationRepository.save(n);
             return ResponseEntity.ok("Sent");
@@ -38,6 +39,19 @@ public class NotificationController {
     @GetMapping("/{userId}")
     public List<Notification> getUserNotifications(@PathVariable Long userId) {
         return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
+    }
+
+    // 🔥 NEW: Badge Count (1-9+)
+    @GetMapping("/unread-count/{userId}")
+    public ResponseEntity<Long> getUnreadCount(@PathVariable Long userId) {
+        return ResponseEntity.ok(notificationRepository.countByUserIdAndIsReadFalse(userId));
+    }
+
+    // 🔥 NEW: Jab Notification page khule to Read mark karo
+    @PutMapping("/mark-read/{userId}")
+    public ResponseEntity<?> markAllRead(@PathVariable Long userId) {
+        notificationRepository.markAllAsRead(userId);
+        return ResponseEntity.ok("Marked as read");
     }
     
     @DeleteMapping("/clear/{id}")
