@@ -2,24 +2,28 @@ package com.contrimate.contrimate.controller;
 
 import com.contrimate.contrimate.entity.Expense;
 import com.contrimate.contrimate.entity.ExpenseSplit;
+import com.contrimate.contrimate.entity.User;
+import com.contrimate.contrimate.repository.UserRepository;
 import com.contrimate.contrimate.service.ExpenseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/expenses")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "*") // Mobile testing ke liye "*" better hai
 public class ExpenseController {
 
     @Autowired
     private ExpenseService expenseService;
 
-    // 1. NEW API: USER BALANCE
+    @Autowired
+    private UserRepository userRepository; // ✨ Friends ki details fetch karne ke liye zaroori
+
+    // 1. USER BALANCE
     @GetMapping("/user-balance")
     public ResponseEntity<Double> getUserBalance(@RequestParam Long userId) {
         try {
@@ -44,20 +48,16 @@ public class ExpenseController {
         return ResponseEntity.ok(expenses != null ? expenses : List.of());
     }
 
-    // 🔥 4. ADD EXPENSE (UPDATED FIX)
+    // 4. ADD EXPENSE
     @PostMapping("/add")
     public ResponseEntity<?> createExpense(@RequestBody Expense expense) {
         try {
-            // 🔥 FIX 1: Set Current Date & Time
             expense.setCreatedAt(LocalDateTime.now());
-
-            // 🔥 FIX 2: Link Splits to Expense (Zaroori hai taaki database mein link bane)
             if (expense.getSplits() != null) {
                 for (ExpenseSplit split : expense.getSplits()) {
                     split.setExpense(expense);
                 }
             }
-
             Expense saved = expenseService.saveExpense(expense);
             return ResponseEntity.ok(saved);
         } catch (Exception e) {
@@ -91,12 +91,31 @@ public class ExpenseController {
         return ResponseEntity.ok("Cleared");
     }
 
-    // 7. GET DEBTS (For Settle Up List)
+    // 🔥 7. GET DEBTS (UPDATED: Added UPI & PFP for Real Payments)
     @GetMapping("/debts/{userId}")
     public ResponseEntity<List<Map<String, Object>>> getUserDebts(@PathVariable Long userId) {
         try {
-            List<Map<String, Object>> debts = expenseService.getFriendBalances(userId);
-            return ResponseEntity.ok(debts);
+            // Service se basic balance list lo
+            List<Map<String, Object>> rawDebts = expenseService.getFriendBalances(userId);
+            List<Map<String, Object>> detailedDebts = new ArrayList<>();
+
+            for (Map<String, Object> debt : rawDebts) {
+                Long friendId = Long.valueOf(debt.get("userId").toString());
+                
+                // Dost ki extra details fetch karo (UPI ID aur Photo)
+                Optional<User> friendOpt = userRepository.findById(friendId);
+                
+                if (friendOpt.isPresent()) {
+                    User friend = friendOpt.get();
+                    Map<String, Object> debtMap = new HashMap<>(debt); // Existing data (id, balance) copy karo
+                    
+                    debtMap.put("upiId", friend.getUpiId()); // ✨ Real payment ke liye
+                    debtMap.put("profilePic", friend.getProfilePic()); // ✨ UI pfp ke liye
+                    
+                    detailedDebts.add(debtMap);
+                }
+            }
+            return ResponseEntity.ok(detailedDebts);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }
