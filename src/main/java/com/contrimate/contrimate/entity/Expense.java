@@ -26,16 +26,17 @@ public class Expense {
     @JsonIgnoreProperties("expenses")
     private AppGroup group;
 
-    @OneToMany(mappedBy = "expense", cascade = CascadeType.ALL)
+    // 🔥 FIX: Yahan EAGER lagana zaroori hai, tabhi Notification jayegi
+    @OneToMany(mappedBy = "expense", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JsonIgnoreProperties("expense")
     private List<ExpenseSplit> splits;
 
-    
-    @OneToMany(mappedBy = "expense", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    // Comments ko LAZY rakho ya default, taaki 'MultipleBagFetchException' na aaye
+    @OneToMany(mappedBy = "expense", cascade = CascadeType.ALL)
     @JsonIgnoreProperties("expense")
     private List<Comment> comments;
 
-    
+    // --- Getters and Setters ---
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

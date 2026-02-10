@@ -70,17 +70,27 @@ public class CommentController {
 
             // 🔥 Notification Logic
             Set<User> recipients = new HashSet<>();
-            if (expense.getPaidBy() != null) recipients.add(expense.getPaidBy());
+            
+            // Add Payer
+            if (expense.getPaidBy() != null) {
+                recipients.add(expense.getPaidBy());
+            }
+            
+            // Add Split members (Ab ye load honge kyunki Expense me EAGER laga diya hai)
             if (expense.getSplits() != null) {
                 for (ExpenseSplit split : expense.getSplits()) {
-                    if (split.getUser() != null) recipients.add(split.getUser());
+                    if (split.getUser() != null) {
+                        recipients.add(split.getUser());
+                    }
                 }
             }
+            
+            // Remove sender (khud ko notify nahi karna)
             recipients.remove(sender);
 
             for (User recipient : recipients) {
                 Notification n = new Notification();
-                n.setUser(recipient); // ✅ Ab ye line chalegi kyunki Entity update ho gayi hai
+                n.setUser(recipient);
                 n.setMessage(sender.getName() + " commented: " + text);
                 n.setIsRead(false);
                 n.setCreatedAt(LocalDateTime.now());
