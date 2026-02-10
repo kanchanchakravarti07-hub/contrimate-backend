@@ -45,22 +45,20 @@ public class CommentController {
     public ResponseEntity<List<Map<String, Object>>> getComments(@PathVariable Long expenseId) {
         List<Comment> comments = commentRepository.findByExpenseIdOrderByCreatedAtAsc(expenseId);
         List<Map<String, Object>> response = new ArrayList<>();
-        for (Comment c : comments) {
-            response.add(toDto(c));
-        }
+        for (Comment c : comments) response.add(toDto(c));
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/add")
-    @Transactional // 🔥 IMPORTANT: Transaction Ensures Notification is Saved
+    @Transactional // 🔥 Transactional zaroori hai taaki dono (Comment + Notification) save hon
     public ResponseEntity<?> addComment(@RequestBody Map<String, Object> payload) {
         try {
             String text = (String) payload.get("text");
             Long userId = Long.valueOf(payload.get("userId").toString());
             Long expenseId = Long.valueOf(payload.get("expenseId").toString());
 
-            User sender = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
-            Expense expense = expenseRepository.findById(expenseId).orElseThrow(() -> new RuntimeException("Expense not found"));
+            User sender = userRepository.findById(userId).orElseThrow();
+            Expense expense = expenseRepository.findById(expenseId).orElseThrow();
 
             // 1. Save Comment
             Comment c = new Comment();
@@ -68,16 +66,17 @@ public class CommentController {
             c.setUser(sender);
             c.setExpense(expense);
             c.setCreatedAt(LocalDateTime.now());
-            
             Comment saved = commentRepository.save(c);
 
-            // 2. Notification Logic
+            // 2. 🔥 ROBUST NOTIFICATION LOGIC
             Set<Long> recipientIds = new HashSet<>();
-            
+
+            // Payer ko add karo (Agar payer main nahi hu)
             if (expense.getPaidBy() != null) {
                 recipientIds.add(expense.getPaidBy().getId());
             }
-            
+
+            // Splits se logo ko nikalo
             if (expense.getSplits() != null) {
                 for (ExpenseSplit split : expense.getSplits()) {
                     if (split.getUser() != null) {
@@ -85,9 +84,11 @@ public class CommentController {
                     }
                 }
             }
-            
+
+            // Khud ko remove karo
             recipientIds.remove(sender.getId());
 
+            // Notification Save karo
             for (Long rId : recipientIds) {
                 User recipient = userRepository.findById(rId).orElse(null);
                 if (recipient != null) {
@@ -96,15 +97,14 @@ public class CommentController {
                     n.setMessage(sender.getName() + " commented: " + text);
                     n.setIsRead(false);
                     n.setCreatedAt(LocalDateTime.now());
-                    
-                    notificationRepository.save(n); // 🔥 Explicit Save
+                    notificationRepository.save(n);
                 }
             }
             
             return ResponseEntity.ok(toDto(saved));
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.badRequest().body("Error adding comment: " + e.getMessage());
+            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         }
     }
 }
