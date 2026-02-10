@@ -26,12 +26,13 @@ public class Expense {
     @JsonIgnoreProperties("expenses")
     private AppGroup group;
 
-    // 🔥 REVERTED: 'fetch = FetchType.EAGER' hata diya hai. Ab loop nahi banega.
+    // Splits ko normal rakho (Crash se bachne ke liye)
     @OneToMany(mappedBy = "expense", cascade = CascadeType.ALL)
     @JsonIgnoreProperties("expense")
     private List<ExpenseSplit> splits;
 
-    @OneToMany(mappedBy = "expense", cascade = CascadeType.ALL)
+    // 🔥 FIX: Yahan EAGER lagana padega kyunki Home page par Chat icon ko comments chahiye
+    @OneToMany(mappedBy = "expense", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JsonIgnoreProperties("expense")
     private List<Comment> comments;
 

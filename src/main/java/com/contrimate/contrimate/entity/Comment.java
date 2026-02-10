@@ -1,7 +1,7 @@
 package com.contrimate.contrimate.entity;
 
 import jakarta.persistence.*;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnore; // 🔥 Import Zaroori hai
 import java.time.LocalDateTime;
 
 @Entity
@@ -19,10 +19,10 @@ public class Comment {
 
     @ManyToOne
     @JoinColumn(name = "expense_id")
-    @JsonIgnoreProperties("comments") 
+    @JsonIgnore // 🔥 YE CRITICAL HAI: Isse recursion rukega
     private Expense expense;
 
-    
+    // --- GETTERS & SETTERS ---
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     
