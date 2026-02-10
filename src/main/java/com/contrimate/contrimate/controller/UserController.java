@@ -249,4 +249,12 @@ public class UserController {
             return ResponseEntity.internalServerError().body("Error: " + e.getMessage());
         }
     }
+    @GetMapping("/sent-requests")
+public ResponseEntity<?> getSentRequests(@RequestParam String email) {
+    Optional<User> user = userRepository.findByEmail(email);
+    if (user.isEmpty()) return ResponseEntity.status(404).build();
+    // Friendship table mein status 'PENDING' aur sender 'user' hona chahiye
+    List<Friendship> requests = friendshipRepository.findByUserAndStatus(user.get(), "PENDING");
+    return ResponseEntity.ok(requests);
+}
 }
