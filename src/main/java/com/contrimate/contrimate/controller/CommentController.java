@@ -11,8 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/comments")
@@ -22,15 +21,39 @@ public class CommentController {
     @Autowired private UserRepository userRepository;
     @Autowired private ExpenseRepository expenseRepository;
 
+    
+    private Map<String, Object> toDto(Comment c) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", c.getId());
+        map.put("text", c.getText());
+        map.put("createdAt", c.getCreatedAt());
+        
+        if (c.getUser() != null) {
+            Map<String, Object> u = new HashMap<>();
+            u.put("id", c.getUser().getId());
+            u.put("name", c.getUser().getName());
+            // No Profile Pic to keep chat fast
+            map.put("user", u);
+        }
+        return map;
+    }
+
     @GetMapping("/{expenseId}")
-    public List<Comment> getComments(@PathVariable Long expenseId) {
-        return commentRepository.findByExpenseIdOrderByCreatedAtAsc(expenseId);
+    public ResponseEntity<List<Map<String, Object>>> getComments(@PathVariable Long expenseId) {
+        List<Comment> comments = commentRepository.findByExpenseIdOrderByCreatedAtAsc(expenseId);
+        List<Map<String, Object>> response = new ArrayList<>();
+        
+        for (Comment c : comments) {
+            response.add(toDto(c));
+        }
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/add")
     public ResponseEntity<?> addComment(@RequestBody Map<String, Object> payload) {
         try {
             String text = (String) payload.get("text");
+
             Long userId = Long.valueOf(payload.get("userId").toString());
             Long expenseId = Long.valueOf(payload.get("expenseId").toString());
 
@@ -43,8 +66,12 @@ public class CommentController {
             c.setExpense(expense);
             c.setCreatedAt(LocalDateTime.now());
             
-            return ResponseEntity.ok(commentRepository.save(c));
+            Comment saved = commentRepository.save(c);
+            
+            
+            return ResponseEntity.ok(toDto(saved));
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.badRequest().body("Error adding comment");
         }
     }

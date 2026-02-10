@@ -1,6 +1,7 @@
 package com.contrimate.contrimate.entity;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.LocalDateTime;
 
 @Entity
@@ -13,19 +14,27 @@ public class Comment {
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @ManyToOne
+    @JoinColumn(name = "user_id")
     private User user;
 
     @ManyToOne
+    @JoinColumn(name = "expense_id")
+    @JsonIgnoreProperties("comments") 
     private Expense expense;
 
+    
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+    
     public String getText() { return text; }
     public void setText(String text) { this.text = text; }
+    
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
+    
     public Expense getExpense() { return expense; }
     public void setExpense(Expense expense) { this.expense = expense; }
 }
