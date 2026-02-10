@@ -17,12 +17,11 @@ import java.util.Random;
 @Service
 public class EmailService {
 
-    // Railway Variable se Key uthayega
     @Value("${SENDGRID_API_KEY}") 
     private String apiKey;
 
-    // Yahan hardcode kar rahe hain taaki error na aaye (Apni verified email likhna)
-    private String senderEmail = "kanchanprajapati8059@gmail.com"; 
+    // 🔥 FIX: Yahan verified email daal diya hai
+    private String senderEmail = "2314114kanchan.2023cse@gmail.com"; 
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -32,11 +31,9 @@ public class EmailService {
 
     public String sendOtp(String toEmail) {
         try {
-            // 1. OTP Generate Karo
             String otp = String.format("%06d", new Random().nextInt(999999));
             otpStorage.put(toEmail, otp);
 
-            // 2. HTML Design (Wahi purana Green wala) 🎨
             String htmlContent = "<div style='font-family: Helvetica,Arial,sans-serif;min-width:1000px;overflow:auto;line-height:2'>"
                     + "<div style='margin:50px auto;width:70%;padding:20px 0'>"
                     + "<div style='border-bottom:1px solid #eee'>"
@@ -49,7 +46,7 @@ public class EmailService {
                     + "<hr style='border:none;border-top:1px solid #eee' />"
                     + "</div></div>";
 
-            // 3. SendGrid JSON Structure Prepare Karo
+            // Payload Structure
             Map<String, Object> personalizations = new HashMap<>();
             personalizations.put("to", List.of(Map.of("email", toEmail)));
 
@@ -69,7 +66,6 @@ public class EmailService {
 
             String jsonBody = objectMapper.writeValueAsString(payload);
 
-            // 4. API Request Bhejo (SendGrid URL)
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://api.sendgrid.com/v3/mail/send"))
                 .header("Authorization", "Bearer " + apiKey)
@@ -79,12 +75,12 @@ public class EmailService {
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-            // SendGrid success hone par 202 code deta hai
             if (response.statusCode() == 202 || response.statusCode() == 200) {
                 System.out.println("✅ Email Sent via SendGrid to: " + toEmail);
             } else {
                 System.err.println("❌ API Error: " + response.body());
-                System.out.println("⚠️ FALLBACK OTP (Logs): " + otp); // Agar fail hua to console me dikhega
+                // Fallback abhi bhi rakho just in case
+                System.out.println("⚠️ FALLBACK OTP (Logs): " + otp); 
             }
 
             return otp;
@@ -95,7 +91,6 @@ public class EmailService {
         }
     }
 
-    // --- Helper Methods ---
     public boolean sendOtpEmail(String toEmail) {
         sendOtp(toEmail);
         return true;
