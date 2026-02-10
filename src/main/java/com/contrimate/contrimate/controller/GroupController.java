@@ -5,6 +5,7 @@ import com.contrimate.contrimate.repository.GroupRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -24,10 +25,17 @@ public class GroupController {
         return groupRepository.findAll();
     }
 
-    
     @GetMapping("/my-groups")
     public List<AppGroup> getMyGroups(@RequestParam Long userId) {
-        return groupRepository.findGroupsByUserId(userId);
+        List<AppGroup> allGroups = groupRepository.findAll();
+        List<AppGroup> myGroups = new ArrayList<>();
+        
+        for (AppGroup group : allGroups) {
+            if (group.getMemberIds() != null && group.getMemberIds().contains(userId)) {
+                myGroups.add(group);
+            }
+        }
+        return myGroups;
     }
 
     @PutMapping("/update/{id}")

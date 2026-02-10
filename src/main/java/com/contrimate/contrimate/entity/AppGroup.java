@@ -15,7 +15,6 @@ public class AppGroup {
     private String name;
     private Long adminId;
 
-
     @ElementCollection(fetch = FetchType.EAGER)
     private List<Long> memberIds = new ArrayList<>();
 
