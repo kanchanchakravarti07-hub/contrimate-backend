@@ -26,12 +26,11 @@ public class Expense {
     @JsonIgnoreProperties("expenses")
     private AppGroup group;
 
-    // 🔥 FIX: Yahan EAGER lagana zaroori hai, tabhi Notification jayegi
-    @OneToMany(mappedBy = "expense", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    // 🔥 REVERTED: 'fetch = FetchType.EAGER' hata diya hai. Ab loop nahi banega.
+    @OneToMany(mappedBy = "expense", cascade = CascadeType.ALL)
     @JsonIgnoreProperties("expense")
     private List<ExpenseSplit> splits;
 
-    // Comments ko LAZY rakho ya default, taaki 'MultipleBagFetchException' na aaye
     @OneToMany(mappedBy = "expense", cascade = CascadeType.ALL)
     @JsonIgnoreProperties("expense")
     private List<Comment> comments;

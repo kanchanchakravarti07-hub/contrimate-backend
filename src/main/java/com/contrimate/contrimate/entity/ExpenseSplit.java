@@ -1,7 +1,7 @@
 package com.contrimate.contrimate.entity;
 
 import jakarta.persistence.*;
-import com.fasterxml.jackson.annotation.JsonIgnore; // 🔥 Import Zaroori hai
+import com.fasterxml.jackson.annotation.JsonIgnore; // 🔥 Ye import zaroori hai
 
 @Entity
 public class ExpenseSplit {
@@ -16,12 +16,12 @@ public class ExpenseSplit {
 
     @ManyToOne
     @JoinColumn(name = "expense_id")
-    @JsonIgnore // 🔥 YE BAHUT ZAROORI HAI: Isse recursion rukega aur app crash nahi karegi
+    @JsonIgnore // 🔥 CRITICAL: Ye app ko crash hone se bachata hai
     private Expense expense;
 
     private Double amount;
     
-    // Kabhi-kabhi frontend 'amountOwed' expect karta hai
+    // Kabhi-kabhi frontend 'amountOwed' expect karta hai, isliye dono rakhe hain
     private Double amountOwed; 
 
     // --- Getters & Setters ---
