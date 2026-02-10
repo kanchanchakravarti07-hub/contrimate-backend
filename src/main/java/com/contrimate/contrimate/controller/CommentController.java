@@ -12,6 +12,7 @@ import com.contrimate.contrimate.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -51,6 +52,7 @@ public class CommentController {
     }
 
     @PostMapping("/add")
+    @Transactional // 🔥 IMPORTANT: Transaction Ensures Notification is Saved
     public ResponseEntity<?> addComment(@RequestBody Map<String, Object> payload) {
         try {
             String text = (String) payload.get("text");
@@ -60,6 +62,7 @@ public class CommentController {
             User sender = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
             Expense expense = expenseRepository.findById(expenseId).orElseThrow(() -> new RuntimeException("Expense not found"));
 
+            // 1. Save Comment
             Comment c = new Comment();
             c.setText(text);
             c.setUser(sender);
@@ -68,34 +71,34 @@ public class CommentController {
             
             Comment saved = commentRepository.save(c);
 
-            // 🔥 Notification Logic
-            Set<User> recipients = new HashSet<>();
+            // 2. Notification Logic
+            Set<Long> recipientIds = new HashSet<>();
             
-            // Add Payer
             if (expense.getPaidBy() != null) {
-                recipients.add(expense.getPaidBy());
+                recipientIds.add(expense.getPaidBy().getId());
             }
             
-            // Add Split members (Ab ye load honge kyunki Expense me EAGER laga diya hai)
             if (expense.getSplits() != null) {
                 for (ExpenseSplit split : expense.getSplits()) {
                     if (split.getUser() != null) {
-                        recipients.add(split.getUser());
+                        recipientIds.add(split.getUser().getId());
                     }
                 }
             }
             
-            // Remove sender (khud ko notify nahi karna)
-            recipients.remove(sender);
+            recipientIds.remove(sender.getId());
 
-            for (User recipient : recipients) {
-                Notification n = new Notification();
-                n.setUser(recipient);
-                n.setMessage(sender.getName() + " commented: " + text);
-                n.setIsRead(false);
-                n.setCreatedAt(LocalDateTime.now());
-                
-                notificationRepository.save(n);
+            for (Long rId : recipientIds) {
+                User recipient = userRepository.findById(rId).orElse(null);
+                if (recipient != null) {
+                    Notification n = new Notification();
+                    n.setUser(recipient);
+                    n.setMessage(sender.getName() + " commented: " + text);
+                    n.setIsRead(false);
+                    n.setCreatedAt(LocalDateTime.now());
+                    
+                    notificationRepository.save(n); // 🔥 Explicit Save
+                }
             }
             
             return ResponseEntity.ok(toDto(saved));
