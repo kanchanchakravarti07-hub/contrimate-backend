@@ -3,6 +3,7 @@ package com.contrimate.contrimate.controller;
 import com.contrimate.contrimate.entity.AppGroup;
 import com.contrimate.contrimate.repository.GroupRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -25,14 +26,23 @@ public class GroupController {
         return groupRepository.findAll();
     }
 
+
     @GetMapping("/my-groups")
+    @Transactional(readOnly = true)
     public List<AppGroup> getMyGroups(@RequestParam Long userId) {
         List<AppGroup> allGroups = groupRepository.findAll();
         List<AppGroup> myGroups = new ArrayList<>();
         
+        if (allGroups == null) return myGroups;
+
         for (AppGroup group : allGroups) {
-            if (group.getMemberIds() != null && group.getMemberIds().contains(userId)) {
-                myGroups.add(group);
+            try {
+                if (group.getMemberIds() != null && group.getMemberIds().contains(userId)) {
+                    myGroups.add(group);
+                }
+            } catch (Exception e) {
+                
+                continue;
             }
         }
         return myGroups;

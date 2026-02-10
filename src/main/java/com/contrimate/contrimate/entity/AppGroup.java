@@ -2,6 +2,7 @@ package com.contrimate.contrimate.entity;
 
 import jakarta.persistence.*;
 import java.util.List;
+import java.util.ArrayList;
 
 @Entity
 @Table(name = "app_groups")
@@ -14,8 +15,9 @@ public class AppGroup {
     private String name;
     private Long adminId;
 
-    @ElementCollection
-    private List<Long> memberIds;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    private List<Long> memberIds = new ArrayList<>();
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
