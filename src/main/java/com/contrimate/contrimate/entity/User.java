@@ -18,6 +18,10 @@ public class User {
     private String password; 
     private String upiId;
 
+    // 🔥 Profile Picture field (LONGTEXT for Base64 storage)
+    @Column(columnDefinition = "LONGTEXT")
+    private String profilePic;
+
     // 🔥 Ye field database mein save nahi hoga, sirf verification ke liye hai
     @Transient 
     private String otp;
@@ -39,7 +43,9 @@ public class User {
     public String getUpiId() { return upiId; }
     public void setUpiId(String upiId) { this.upiId = upiId; }
 
-    // 👇 OTP ke Getters & Setters zaroori hain
+    public String getProfilePic() { return profilePic; }
+    public void setProfilePic(String profilePic) { this.profilePic = profilePic; }
+
     public String getOtp() { return otp; }
     public void setOtp(String otp) { this.otp = otp; }
 }

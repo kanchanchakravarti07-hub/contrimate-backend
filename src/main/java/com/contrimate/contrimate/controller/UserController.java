@@ -168,26 +168,24 @@ public class UserController {
     }
 
     // --- 9. GET MY FRIENDS ---
-    // --- 9. GET MY FRIENDS (Real Logic) ---
-@GetMapping("/my-friends")
-public ResponseEntity<?> getMyFriends(@RequestParam String email) {
-    Optional<User> userOpt = userRepository.findByEmail(email);
-    if (userOpt.isEmpty()) return ResponseEntity.status(404).build();
-    
-    User user = userOpt.get();
-    List<Friendship> friendships = friendshipRepository.findAllAcceptedFriends(user);
-    
-    // Sirf doston ki User objects nikalne ke liye
-    List<User> friends = new ArrayList<>();
-    for (Friendship f : friendships) {
-        if (f.getUser().getId().equals(user.getId())) {
-            friends.add(f.getFriend());
-        } else {
-            friends.add(f.getUser());
+    @GetMapping("/my-friends")
+    public ResponseEntity<?> getMyFriends(@RequestParam String email) {
+        Optional<User> userOpt = userRepository.findByEmail(email);
+        if (userOpt.isEmpty()) return ResponseEntity.status(404).build();
+        
+        User user = userOpt.get();
+        List<Friendship> friendships = friendshipRepository.findAllAcceptedFriends(user);
+        
+        List<User> friends = new ArrayList<>();
+        for (Friendship f : friendships) {
+            if (f.getUser().getId().equals(user.getId())) {
+                friends.add(f.getFriend());
+            } else {
+                friends.add(f.getUser());
+            }
         }
+        return ResponseEntity.ok(friends);
     }
-    return ResponseEntity.ok(friends);
-}
 
     // --- 10. GET PENDING REQUESTS ---
     @GetMapping("/pending-requests")
@@ -201,39 +199,47 @@ public ResponseEntity<?> getMyFriends(@RequestParam String email) {
     // --- 11. REMOVE FRIEND ---
     @PostMapping("/remove-friend")
     public ResponseEntity<?> removeFriend(@RequestBody Map<String, String> request) {
-        String myEmail = request.get("myEmail");
-        Long otherId = Long.valueOf(request.get("friendId"));
-        Optional<User> me = userRepository.findByEmail(myEmail);
-        Optional<User> other = userRepository.findById(otherId);
+        try {
+            String myEmail = request.get("myEmail");
+            Long otherId = Long.valueOf(request.get("friendId"));
+            Optional<User> me = userRepository.findByEmail(myEmail);
+            Optional<User> other = userRepository.findById(otherId);
 
-        if (me.isPresent() && other.isPresent()) {
-            User u1 = me.get();
-            User u2 = other.get();
-            Optional<Friendship> f1 = friendshipRepository.findByUserAndFriend(u1, u2);
-            if (f1.isPresent()) {
-                friendshipRepository.delete(f1.get());
-                return ResponseEntity.ok("Friend Removed");
+            if (me.isPresent() && other.isPresent()) {
+                User u1 = me.get();
+                User u2 = other.get();
+                Optional<Friendship> f1 = friendshipRepository.findByUserAndFriend(u1, u2);
+                if (f1.isPresent()) {
+                    friendshipRepository.delete(f1.get());
+                    return ResponseEntity.ok("Friend Removed");
+                }
+                Optional<Friendship> f2 = friendshipRepository.findByUserAndFriend(u2, u1);
+                if (f2.isPresent()) {
+                    friendshipRepository.delete(f2.get());
+                    return ResponseEntity.ok("Friend Removed");
+                }
+                return ResponseEntity.badRequest().body("No friendship found");
             }
-             Optional<Friendship> f2 = friendshipRepository.findByUserAndFriend(u2, u1);
-            if (f2.isPresent()) {
-                friendshipRepository.delete(f2.get());
-                return ResponseEntity.ok("Friend Removed");
-            }
-            return ResponseEntity.badRequest().body("No friendship found");
+            return ResponseEntity.badRequest().body("User not found");
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error: " + e.getMessage());
         }
-        return ResponseEntity.badRequest().body("User not found");
     }
 
-    // --- 🔥 12. UPDATE PROFILE ---
+    // --- 12. UPDATE PROFILE ---
     @PutMapping("/update-profile")
     public ResponseEntity<?> updateProfile(@RequestBody Map<String, String> request) {
         try {
             Long userId = Long.valueOf(request.get("id"));
             String newName = request.get("name");
+            String profilePic = request.get("profilePic"); 
+
             Optional<User> userOpt = userRepository.findById(userId);
             if (userOpt.isPresent()) {
                 User user = userOpt.get();
-                user.setName(newName);
+                if (newName != null) user.setName(newName);
+                if (profilePic != null) user.setProfilePic(profilePic); 
+                
                 userRepository.save(user);
                 return ResponseEntity.ok("Profile Updated Successfully! ✅");
             } else {
