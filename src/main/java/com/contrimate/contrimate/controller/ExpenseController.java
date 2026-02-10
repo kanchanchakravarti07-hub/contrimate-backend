@@ -48,20 +48,20 @@ public class ExpenseController {
         return ResponseEntity.ok(expenses != null ? expenses : List.of());
     }
 
-    // 🔥 4. ADD EXPENSE (FIXED: Handling 'Error Saving')
+    // 🔥 4. ADD EXPENSE (FIXED: Error Saving & DB Sync)
     @PostMapping("/add")
     public ResponseEntity<?> createExpense(@RequestBody Expense expense) {
         try {
             // Timestamp set karna zaroori hai
             expense.setCreatedAt(LocalDateTime.now());
 
-            // Splits ko Expense Object se link karna padta hai foreign key ke liye
+            // Splits ko Expense Object se manually link karna padta hai foreign key ke liye
             if (expense.getSplits() != null && !expense.getSplits().isEmpty()) {
                 for (ExpenseSplit split : expense.getSplits()) {
                     split.setExpense(expense);
                 }
             } else {
-                return ResponseEntity.badRequest().body("Error: Splits cannot be empty.");
+                return ResponseEntity.badRequest().body("Error: Splits list is empty. Cannot save expense.");
             }
 
             Expense saved = expenseService.saveExpense(expense);
@@ -97,7 +97,7 @@ public class ExpenseController {
         }
     }
 
-    // 7. CLEAR ALL DATA
+    // 7. CLEAR ALL DATA (Testing Only)
     @DeleteMapping("/clear")
     public ResponseEntity<?> clear() {
         expenseService.clearAll();
@@ -114,13 +114,14 @@ public class ExpenseController {
             for (Map<String, Object> debt : rawDebts) {
                 Long friendId = Long.valueOf(debt.get("userId").toString());
                 
-                // Dost ki extra details fetch karna
+                // Har dost ki extra details database se fetch karna
                 Optional<User> friendOpt = userRepository.findById(friendId);
                 
                 if (friendOpt.isPresent()) {
                     User friend = friendOpt.get();
                     Map<String, Object> debtMap = new HashMap<>(debt);
                     
+                    // UPI ID aur Profile Pic add karna frontend ke liye
                     debtMap.put("upiId", friend.getUpiId()); 
                     debtMap.put("profilePic", friend.getProfilePic()); 
                     
