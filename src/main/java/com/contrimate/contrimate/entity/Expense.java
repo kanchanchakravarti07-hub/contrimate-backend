@@ -30,9 +30,12 @@ public class Expense {
     @JsonIgnoreProperties("expense")
     private List<ExpenseSplit> splits;
 
-    @OneToMany(mappedBy = "expense", cascade = CascadeType.ALL)
+    
+    @OneToMany(mappedBy = "expense", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JsonIgnoreProperties("expense")
     private List<Comment> comments;
+
+    
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
