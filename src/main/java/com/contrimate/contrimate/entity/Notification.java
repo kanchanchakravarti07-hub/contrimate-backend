@@ -9,7 +9,10 @@ public class Notification {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long userId; 
+    // 🔥 CHANGE: Pehle yahan Long userId tha, ab User object hai (Relationship)
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
     
     private String message;
     private Boolean isRead = false;
@@ -20,8 +23,9 @@ public class Notification {
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
+    // 🔥 Ab methods setUser aur getUser ban gaye hain
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
 
     public String getMessage() { return message; }
     public void setMessage(String message) { this.message = message; }

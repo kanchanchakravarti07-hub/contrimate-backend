@@ -11,10 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.regex.Pattern;
 
 @RestController
@@ -51,9 +49,7 @@ public class UserController {
     public ResponseEntity<?> addUser(@RequestBody User user) {
         try {
             String email = user.getEmail().trim().toLowerCase();
-            if (!emailService.verifyOtp(email, user.getOtp())) {
-                return ResponseEntity.badRequest().body("Error: OTP galat hai ya expire ho gaya hai!");
-            }
+           
             if (user.getUpiId() == null || !user.getUpiId().contains("@")) {
                 return ResponseEntity.badRequest().body("Error: Invalid UPI ID!");
             }
@@ -100,28 +96,37 @@ public class UserController {
             String friendEmail = request.get("friendEmail").trim().toLowerCase();
             if (myEmail.equals(friendEmail)) return ResponseEntity.badRequest().body("Error: Khud ko request nahi bhej sakte!");
 
-            Optional<User> me = userRepository.findByEmail(myEmail);
-            Optional<User> friend = userRepository.findByEmail(friendEmail);
-            if (friend.isEmpty()) return ResponseEntity.status(404).body("Error: User nahi mila!");
+            Optional<User> meOpt = userRepository.findByEmail(myEmail);
+            Optional<User> friendOpt = userRepository.findByEmail(friendEmail);
+            
+            if (meOpt.isEmpty() || friendOpt.isEmpty()) return ResponseEntity.status(404).body("Error: User nahi mila!");
 
-            if (friendshipRepository.findByUserAndFriend(me.get(), friend.get()).isPresent()) {
+            User me = meOpt.get();
+            User friend = friendOpt.get();
+
+            
+            if (friendshipRepository.findByUserAndFriend(me, friend).isPresent() || 
+                friendshipRepository.findByUserAndFriend(friend, me).isPresent()) {
                 return ResponseEntity.badRequest().body("Error: Request pehle se bheji hui hai ya dost hain!");
             }
 
             Friendship f = new Friendship();
-            f.setUser(me.get());
-            f.setFriend(friend.get());
+            f.setUser(me);
+            f.setFriend(friend);
             f.setStatus("PENDING"); 
             friendshipRepository.save(f);
 
+
             Notification n = new Notification();
-            n.setUserId(friend.get().getId()); 
-            n.setMessage(me.get().getName() + " sent you a friend request! 👋");
+            n.setUser(friend); 
+            n.setMessage(me.getName() + " sent you a friend request! 👋");
             n.setIsRead(false);
+            n.setCreatedAt(LocalDateTime.now());
             notificationRepository.save(n);
 
             return ResponseEntity.ok("Friend Request Sent! 📩");
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.internalServerError().body("Error: " + e.getMessage());
         }
     }
@@ -147,15 +152,36 @@ public class UserController {
 
     @PostMapping("/accept-friend")
     public ResponseEntity<?> acceptRequest(@RequestBody Map<String, Long> request) {
-        Long requestId = request.get("requestId");
-        Optional<Friendship> f = friendshipRepository.findById(requestId);
-        if (f.isPresent()) {
-            Friendship friendship = f.get();
-            friendship.setStatus("ACCEPTED"); 
-            friendshipRepository.save(friendship);
-            return ResponseEntity.ok("Friend Request Accepted! ✅");
+        try {
+            Long requestId = Long.valueOf(request.get("requestId").toString());
+            Optional<Friendship> f = friendshipRepository.findById(requestId);
+            
+            if (f.isPresent()) {
+                Friendship friendship = f.get();
+                friendship.setStatus("ACCEPTED"); 
+                friendshipRepository.save(friendship);
+                
+                
+                Friendship reverse = new Friendship();
+                reverse.setUser(friendship.getFriend());
+                reverse.setFriend(friendship.getUser());
+                reverse.setStatus("ACCEPTED");
+                friendshipRepository.save(reverse);
+
+                
+                Notification n = new Notification();
+                n.setUser(friendship.getUser());
+                n.setMessage(friendship.getFriend().getName() + " accepted your friend request! ✅");
+                n.setIsRead(false);
+                n.setCreatedAt(LocalDateTime.now());
+                notificationRepository.save(n);
+
+                return ResponseEntity.ok("Friend Request Accepted! ✅");
+            }
+            return ResponseEntity.badRequest().body("Request not found");
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error: " + e.getMessage());
         }
-        return ResponseEntity.badRequest().body("Request not found");
     }
 
     @GetMapping("/my-friends")
@@ -164,15 +190,12 @@ public class UserController {
         if (userOpt.isEmpty()) return ResponseEntity.status(404).build();
         
         User user = userOpt.get();
-        List<Friendship> friendships = friendshipRepository.findAllAcceptedFriends(user);
+        
+        List<Friendship> friendships = friendshipRepository.findByUserAndStatus(user, "ACCEPTED");
         
         List<User> friends = new ArrayList<>();
         for (Friendship f : friendships) {
-            if (f.getUser().getId().equals(user.getId())) {
-                friends.add(f.getFriend());
-            } else {
-                friends.add(f.getUser());
-            }
+            friends.add(f.getFriend());
         }
         return ResponseEntity.ok(friends);
     }
@@ -181,6 +204,7 @@ public class UserController {
     public ResponseEntity<?> getPendingRequests(@RequestParam String email) {
         Optional<User> user = userRepository.findByEmail(email);
         if (user.isEmpty()) return ResponseEntity.status(404).build();
+        
         List<Friendship> requests = friendshipRepository.findByFriendAndStatus(user.get(), "PENDING");
         return ResponseEntity.ok(requests);
     }
@@ -196,17 +220,15 @@ public class UserController {
             if (me.isPresent() && other.isPresent()) {
                 User u1 = me.get();
                 User u2 = other.get();
+                
+                
                 Optional<Friendship> f1 = friendshipRepository.findByUserAndFriend(u1, u2);
-                if (f1.isPresent()) {
-                    friendshipRepository.delete(f1.get());
-                    return ResponseEntity.ok("Friend Removed");
-                }
+                f1.ifPresent(friendshipRepository::delete);
+                
                 Optional<Friendship> f2 = friendshipRepository.findByUserAndFriend(u2, u1);
-                if (f2.isPresent()) {
-                    friendshipRepository.delete(f2.get());
-                    return ResponseEntity.ok("Friend Removed");
-                }
-                return ResponseEntity.badRequest().body("No friendship found");
+                f2.ifPresent(friendshipRepository::delete);
+                
+                return ResponseEntity.ok("Friend Removed");
             }
             return ResponseEntity.badRequest().body("User not found");
         } catch (Exception e) {

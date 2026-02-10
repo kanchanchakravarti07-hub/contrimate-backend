@@ -12,15 +12,17 @@ import java.util.List;
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
     
-    // List fetch karne ke liye
-    List<Notification> findByUserIdOrderByCreatedAtDesc(Long userId);
+    
+    @Query("SELECT n FROM Notification n WHERE n.user.id = :userId ORDER BY n.createdAt DESC")
+    List<Notification> findByUserIdOrderByCreatedAtDesc(@Param("userId") Long userId);
 
-    // 🔥 Badge ke liye: Count Unread Notifications
-    long countByUserIdAndIsReadFalse(Long userId);
+   
+    @Query("SELECT COUNT(n) FROM Notification n WHERE n.user.id = :userId AND n.isRead = false")
+    long countByUserIdAndIsReadFalse(@Param("userId") Long userId);
 
-    // 🔥 Page open hone par: Mark All as Read
+    
     @Modifying
     @Transactional
-    @Query("UPDATE Notification n SET n.isRead = true WHERE n.userId = :userId")
+    @Query("UPDATE Notification n SET n.isRead = true WHERE n.user.id = :userId")
     void markAllAsRead(@Param("userId") Long userId);
 }
