@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(originPatterns = "*", allowCredentials = "true")
+
 public class UserController {
 
     @Autowired
